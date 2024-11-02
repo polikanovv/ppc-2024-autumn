@@ -16,9 +16,7 @@ TEST(polikanov_v_max_of_vector_elements_perf_test, test_pipeline_run) {
   int max_el = 100;
   // Create TaskData
   std::shared_ptr<ppc::core::TaskData> taskDataPar = std::make_shared<ppc::core::TaskData>();
-  int count_size_vector;
   if (world.rank() == 0) {
-    count_size_vector = 120;
     global_vec = polikanov_v_max_of_vector_elements::getRandomVector(n, lower, max_el);
     taskDataPar->inputs.emplace_back(reinterpret_cast<uint8_t*>(global_vec.data()));
     taskDataPar->inputs_count.emplace_back(global_vec.size());
