@@ -44,4 +44,4 @@ class TestMPITaskParallel : public ppc::core::Task {
   boost::mpi::communicator world;
 };
 
-}  // namespace nesterov_a_test_task_mpi
+}  // namespace polikanov_v_max_of_vector_elements
