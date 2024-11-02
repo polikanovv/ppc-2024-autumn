@@ -6,9 +6,8 @@
 #include "seq/polikanov_v_max_of_vector_elements/include/ops_seq.hpp"
 
 TEST(polikanov_v_max_of_vector_elements_seq, Test_Seq_1) {
-
   // Create data
-  std::vector<int> in = {1,2,3,4,5,6};
+  std::vector<int> in = {1, 2, 3, 4, 5, 6};
   std::vector<int> out(1, 0);
 
   // Create TaskData
@@ -46,7 +45,7 @@ TEST(polikanov_v_max_of_vector_elements_seq, Test_Seq_2) {
   testTaskSequential.run();
   testTaskSequential.post_processing();
   int max = INT_MIN;
-  for (int i = 0; i < in.size(); ++i) {
+  for (size_t i = 0; i < in.size(); ++i) {
     max = std::max(max, in[i]);
   }
   ASSERT_EQ(max, out[0]);

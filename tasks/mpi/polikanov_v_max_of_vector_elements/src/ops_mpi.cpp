@@ -37,7 +37,7 @@ bool polikanov_v_max_of_vector_elements::TestMPITaskSequential::pre_processing()
 bool polikanov_v_max_of_vector_elements::TestMPITaskSequential::validation() {
   internal_order_test();
   // Check count elements of output
-  return taskData->inputs_count[0] == 0 && taskData->outputs_count[0] == 0 || taskData->outputs_count[0] == 1;
+  return (taskData->inputs_count[0] == 0 && taskData->outputs_count[0] == 0) || taskData->outputs_count[0] == 1;
 }
 
 bool polikanov_v_max_of_vector_elements::TestMPITaskSequential::run() {
