@@ -1,4 +1,3 @@
-// Copyright 2023 Nesterov Alexander
 #include "mpi/polikanov_v_max_of_vector_elements/include/ops_mpi.hpp"
 
 #include <algorithm>
@@ -23,7 +22,6 @@ std::vector<int> polikanov_v_max_of_vector_elements::getRandomVector(int sz, int
 
 bool polikanov_v_max_of_vector_elements::TestMPITaskSequential::pre_processing() {
   internal_order_test();
-  // Init value for input and output
   int count = static_cast<int>(taskData->inputs_count[0]);
   int* input = reinterpret_cast<int*>(taskData->inputs[0]);
   input_ = std::vector<int>(count);
@@ -36,7 +34,6 @@ bool polikanov_v_max_of_vector_elements::TestMPITaskSequential::pre_processing()
 
 bool polikanov_v_max_of_vector_elements::TestMPITaskSequential::validation() {
   internal_order_test();
-  // Check count elements of output
   return (taskData->inputs_count[0] == 0 && taskData->outputs_count[0] == 0) || taskData->outputs_count[0] == 1;
 }
 
@@ -46,7 +43,6 @@ bool polikanov_v_max_of_vector_elements::TestMPITaskSequential::run() {
   for (int i = 0; i < count; i++) {
     res = std::max(res, input_[i]);
   }
-  std::this_thread::sleep_for(20ms);
   return true;
 }
 
@@ -58,36 +54,13 @@ bool polikanov_v_max_of_vector_elements::TestMPITaskSequential::post_processing(
 
 bool polikanov_v_max_of_vector_elements::TestMPITaskParallel::pre_processing() {
   internal_order_test();
-  unsigned int delta = 0;
-  if (world.rank() == 0) {
-    delta = taskData->inputs_count[0] / world.size();
-  }
-  broadcast(world, delta, 0);
-
-  if (world.rank() == 0) {
-    // Init vectors
-    input_ = std::vector<int>(taskData->inputs_count[0]);
-    auto* tmp_ptr = reinterpret_cast<int*>(taskData->inputs[0]);
-    for (unsigned i = 0; i < taskData->inputs_count[0]; i++) {
-      input_[i] = tmp_ptr[i];
-    }
-    for (int proc = 1; proc < world.size(); proc++) {
-      world.send(proc, 0, input_.data() + proc * delta, delta);
-    }
-  }
-  local_input_ = std::vector<int>(delta);
-  if (world.rank() == 0) {
-    local_input_ = std::vector<int>(input_.begin(), input_.begin() + delta);
-  } else {
-    world.recv(0, 0, local_input_.data(), delta);
-  }
+  res = INT_MIN;
   return true;
 }
 
 bool polikanov_v_max_of_vector_elements::TestMPITaskParallel::validation() {
   internal_order_test();
   if (world.rank() == 0) {
-    // Check count elements of output
     return taskData->outputs_count[0] == 1;
   }
   return true;
@@ -95,16 +68,36 @@ bool polikanov_v_max_of_vector_elements::TestMPITaskParallel::validation() {
 
 bool polikanov_v_max_of_vector_elements::TestMPITaskParallel::run() {
   internal_order_test();
-  if (local_input_.empty()) {
-    // Handle the case when the local input vector is empty
-    return true;
+  int n = 0;
+
+  if (world.rank() == 0) {
+    n = taskData->inputs_count[0];
+    auto* input_ptr = reinterpret_cast<int32_t*>(taskData->inputs[0]);
+    input_.assign(input_ptr, input_ptr + n);
   }
-  int max = INT_MIN;
-  for (size_t i = 0; i < local_input_.size(); ++i) {
-    max = std::max(max, local_input_[i]);
+  boost::mpi::broadcast(world, n, 0);
+  int local_size = n / world.size() + (world.rank() < (n % world.size()) ? 1 : 0);
+  std::vector<int> vec1(world.size(), n / world.size());
+  std::vector<int> vec2(world.size(), 0);
+
+  for (int i = 0; i < n % world.size(); ++i) {
+    vec1[i]++;
+  }
+  for (int i = 0; i < world.size() - 1; ++i) {
+    vec2[i] += vec1[i];
   }
 
-  reduce(world, max, res, boost::mpi::maximum<int>(), 0);
+  local_input_.resize(vec1[world.rank()]);
+  boost::mpi::scatterv(world, input_.data(), vec1, vec2, local_input_.data(), local_size, 0);
+
+  int cur_max = std::numeric_limits<int>::min();
+  for (int num : local_input_) {
+    if (num > cur_max) {
+      cur_max = num;
+    }
+  }
+  boost::mpi::reduce(world, cur_max, res, boost::mpi::maximum<int>(), 0);
+
   return true;
 }
 
