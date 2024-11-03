@@ -1,3 +1,4 @@
+// Copyright 2023 Nesterov Alexander
 #include "mpi/polikanov_v_max_of_vector_elements/include/ops_mpi.hpp"
 
 #include <algorithm>
@@ -43,6 +44,7 @@ bool polikanov_v_max_of_vector_elements::TestMPITaskSequential::run() {
   for (int i = 0; i < count; i++) {
     res = std::max(res, input_[i]);
   }
+  std::this_thread::sleep_for(20ms);
   return true;
 }
 
@@ -54,7 +56,28 @@ bool polikanov_v_max_of_vector_elements::TestMPITaskSequential::post_processing(
 
 bool polikanov_v_max_of_vector_elements::TestMPITaskParallel::pre_processing() {
   internal_order_test();
-  res = INT_MIN;
+  unsigned int delta = 0;
+  if (world.rank() == 0) {
+    delta = taskData->inputs_count[0] / world.size();
+  }
+  broadcast(world, delta, 0);
+
+  if (world.rank() == 0) {
+    input_ = std::vector<int>(taskData->inputs_count[0]);
+    auto* tmp_ptr = reinterpret_cast<int*>(taskData->inputs[0]);
+    for (unsigned i = 0; i < taskData->inputs_count[0]; i++) {
+      input_[i] = tmp_ptr[i];
+    }
+    for (int proc = 1; proc < world.size(); proc++) {
+      world.send(proc, 0, input_.data() + proc * delta, delta);
+    }
+  }
+  local_input_ = std::vector<int>(delta);
+  if (world.rank() == 0) {
+    local_input_ = std::vector<int>(input_.begin(), input_.begin() + delta);
+  } else {
+    world.recv(0, 0, local_input_.data(), delta);
+  }
   return true;
 }
 
@@ -68,36 +91,15 @@ bool polikanov_v_max_of_vector_elements::TestMPITaskParallel::validation() {
 
 bool polikanov_v_max_of_vector_elements::TestMPITaskParallel::run() {
   internal_order_test();
-  int n = 0;
-
-  if (world.rank() == 0) {
-    n = taskData->inputs_count[0];
-    auto* input_ptr = reinterpret_cast<int32_t*>(taskData->inputs[0]);
-    input_.assign(input_ptr, input_ptr + n);
+  if (local_input_.empty()) {
+    return true;
   }
-  boost::mpi::broadcast(world, n, 0);
-  int local_size = n / world.size() + (world.rank() < (n % world.size()) ? 1 : 0);
-  std::vector<int> vec1(world.size(), n / world.size());
-  std::vector<int> vec2(world.size(), 0);
-
-  for (int i = 0; i < n % world.size(); ++i) {
-    vec1[i]++;
-  }
-  for (int i = 0; i < world.size() - 1; ++i) {
-    vec2[i] += vec1[i];
+  int max = INT_MIN;
+  for (size_t i = 0; i < local_input_.size(); ++i) {
+    max = std::max(max, local_input_[i]);
   }
 
-  local_input_.resize(vec1[world.rank()]);
-  boost::mpi::scatterv(world, input_.data(), vec1, vec2, local_input_.data(), local_size, 0);
-
-  int cur_max = std::numeric_limits<int>::min();
-  for (int num : local_input_) {
-    if (num > cur_max) {
-      cur_max = num;
-    }
-  }
-  boost::mpi::reduce(world, cur_max, res, boost::mpi::maximum<int>(), 0);
-
+  reduce(world, max, res, boost::mpi::maximum<int>(), 0);
   return true;
 }
 
