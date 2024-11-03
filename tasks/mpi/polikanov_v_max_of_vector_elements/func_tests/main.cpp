@@ -66,7 +66,6 @@ TEST(polikanov_v_max_of_vector_elements_MPI, Test_Main) {
   if (world.rank() == 0) {
     ASSERT_EQ(testMpiTaskParallel->validation(), true);
   }
-  
   testMpiTaskParallel->pre_processing();
   testMpiTaskParallel->run();
   testMpiTaskParallel->post_processing();
