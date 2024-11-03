@@ -67,3 +67,30 @@ TEST(polikanov_v_max_of_vector_elements_MPI, Test_Main) {
     ASSERT_EQ(max_el, ans[0]);
   }
 }
+
+TEST(polikanov_v_max_of_vector_elements_MPI, Test_Main1) {
+  boost::mpi::communicator world;
+  std::vector<int> global_vec;
+  std::vector<int32_t> ans(1, 0);
+  int n = 100;
+  int lower = 0;
+  int max_el = 100;
+  // Create TaskData
+  std::shared_ptr<ppc::core::TaskData> taskDataPar = std::make_shared<ppc::core::TaskData>();
+  if (world.rank() == 0) {
+    global_vec = polikanov_v_max_of_vector_elements::getRandomVector(n, lower, max_el);
+    taskDataPar->inputs.emplace_back(reinterpret_cast<uint8_t*>(global_vec.data()));
+    taskDataPar->inputs_count.emplace_back(global_vec.size());
+    taskDataPar->outputs.emplace_back(reinterpret_cast<uint8_t*>(ans.data()));
+    taskDataPar->outputs_count.emplace_back(ans.size());
+  }
+
+  auto testMpiTaskParallel = std::make_shared<polikanov_v_max_of_vector_elements::TestMPITaskParallel>(taskDataPar);
+  ASSERT_EQ(testMpiTaskParallel->validation(), true);
+  testMpiTaskParallel->pre_processing();
+  testMpiTaskParallel->run();
+  testMpiTaskParallel->post_processing();
+  if (world.rank() == 0) {
+    ASSERT_EQ(max_el, ans[0]);
+  }
+}
