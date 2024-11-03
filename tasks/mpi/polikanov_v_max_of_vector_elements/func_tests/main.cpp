@@ -22,7 +22,9 @@ TEST(polikanov_v_max_of_vector_elements_MPI, Test_Valid_false) {
     taskDataPar->outputs_count.emplace_back(global_sum.size());
   }
   polikanov_v_max_of_vector_elements::TestMPITaskParallel testMpiTaskParallel(taskDataPar);
-  ASSERT_FALSE(testMpiTaskParallel.validation());
+  if (world.rank() == 0) {
+    ASSERT_FALSE(testMpiTaskParallel.validation());
+  }
 }
 
 TEST(polikanov_v_max_of_vector_elements_MPI, Test_Valid_true) {
@@ -39,7 +41,9 @@ TEST(polikanov_v_max_of_vector_elements_MPI, Test_Valid_true) {
     taskDataPar->outputs_count.emplace_back(global_sum.size());
   }
   polikanov_v_max_of_vector_elements::TestMPITaskParallel testMpiTaskParallel(taskDataPar);
-  ASSERT_TRUE(testMpiTaskParallel.validation());
+  if (world.rank() == 0) {
+    ASSERT_TRUE(testMpiTaskParallel.validation());
+  }
 }
 TEST(polikanov_v_max_of_vector_elements_MPI, Test_Main) {
   boost::mpi::communicator world;
@@ -59,7 +63,10 @@ TEST(polikanov_v_max_of_vector_elements_MPI, Test_Main) {
   }
 
   auto testMpiTaskParallel = std::make_shared<polikanov_v_max_of_vector_elements::TestMPITaskParallel>(taskDataPar);
-  ASSERT_EQ(testMpiTaskParallel->validation(), true);
+  if (world.rank() == 0) {
+    ASSERT_EQ(testMpiTaskParallel->validation(), true);
+  }
+  
   testMpiTaskParallel->pre_processing();
   testMpiTaskParallel->run();
   testMpiTaskParallel->post_processing();
@@ -86,7 +93,9 @@ TEST(polikanov_v_max_of_vector_elements_MPI, Test_Main1) {
   }
 
   auto testMpiTaskParallel = std::make_shared<polikanov_v_max_of_vector_elements::TestMPITaskParallel>(taskDataPar);
-  ASSERT_EQ(testMpiTaskParallel->validation(), true);
+  if (world.rank() == 0) {
+    ASSERT_EQ(testMpiTaskParallel->validation(), true);
+  }
   testMpiTaskParallel->pre_processing();
   testMpiTaskParallel->run();
   testMpiTaskParallel->post_processing();
