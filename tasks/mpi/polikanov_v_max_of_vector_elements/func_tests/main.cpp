@@ -42,8 +42,8 @@ TEST(polikanov_v_max_of_vector_elements_MPI, Test_Valid_false) {
 
 TEST(polikanov_v_max_of_vector_elements_MPI, Test_Empty_Array) {
   boost::mpi::communicator world;
-  std::vector<int> global_vec; 
-  std::vector<int32_t> ans(1, 0);  
+  std::vector<int> global_vec;
+  std::vector<int32_t> ans(1, 0);
   std::shared_ptr<ppc::core::TaskData> taskDataPar = std::make_shared<ppc::core::TaskData>();
 
   if (world.rank() == 0) {
