@@ -66,6 +66,66 @@ TEST(polikanov_v_max_of_vector_elements_MPI, Test_Empty_Array) {
   }
 }
 
+TEST(polikanov_v_max_of_vector_elements_MPI, Test_Negative_Numbers) {
+  boost::mpi::communicator world;
+  std::vector<int> global_vec;
+  std::vector<int32_t> ans(1, 0);
+  int n = 10;
+  int lower = -100;
+  int upper = -1;
+  int max_el = upper;
+
+  std::shared_ptr<ppc::core::TaskData> taskDataPar = std::make_shared<ppc::core::TaskData>();
+  if (world.rank() == 0) {
+    global_vec = polikanov_v::getRandomVector(n, lower, upper);
+    taskDataPar->inputs.emplace_back(reinterpret_cast<uint8_t*>(global_vec.data()));
+    taskDataPar->inputs_count.emplace_back(global_vec.size());
+    taskDataPar->outputs.emplace_back(reinterpret_cast<uint8_t*>(ans.data()));
+    taskDataPar->outputs_count.emplace_back(ans.size());
+  }
+
+  auto testMpiTaskParallel = std::make_shared<polikanov_v_max_of_vector_elements::TestMPITaskParallel>(taskDataPar);
+
+  ASSERT_EQ(testMpiTaskParallel->validation(), true);
+
+  testMpiTaskParallel->pre_processing();
+  testMpiTaskParallel->run();
+  testMpiTaskParallel->post_processing();
+  if (world.rank() == 0) {
+    ASSERT_EQ(max_el, ans[0]);
+  }
+}
+
+TEST(polikanov_v_max_of_vector_elements_MPI, Test_Mixed_Numbers) {
+  boost::mpi::communicator world;
+  std::vector<int> global_vec;
+  std::vector<int32_t> ans(1, 0);
+  int n = 10;
+  int lower = -50;
+  int upper = 50;
+  int max_el = 50;
+
+  std::shared_ptr<ppc::core::TaskData> taskDataPar = std::make_shared<ppc::core::TaskData>();
+  if (world.rank() == 0) {
+    global_vec = polikanov_v::getRandomVector(n, lower, upper);
+    taskDataPar->inputs.emplace_back(reinterpret_cast<uint8_t*>(global_vec.data()));
+    taskDataPar->inputs_count.emplace_back(global_vec.size());
+    taskDataPar->outputs.emplace_back(reinterpret_cast<uint8_t*>(ans.data()));
+    taskDataPar->outputs_count.emplace_back(ans.size());
+  }
+
+  auto testMpiTaskParallel = std::make_shared<polikanov_v_max_of_vector_elements::TestMPITaskParallel>(taskDataPar);
+
+  ASSERT_EQ(testMpiTaskParallel->validation(), true);
+
+  testMpiTaskParallel->pre_processing();
+  testMpiTaskParallel->run();
+  testMpiTaskParallel->post_processing();
+  if (world.rank() == 0) {
+    ASSERT_EQ(max_el, ans[0]);
+  }
+}
+
 TEST(polikanov_v_max_of_vector_elements_MPI, Test_Valid_true) {
   boost::mpi::communicator world;
   std::vector<int> global_vec(100, 1);
