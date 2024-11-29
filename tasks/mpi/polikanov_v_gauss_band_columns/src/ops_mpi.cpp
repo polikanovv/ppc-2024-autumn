@@ -1,14 +1,7 @@
 #include "mpi/polikanov_v_gauss_band_columns/include/ops_mpi.hpp"
 
-#include <algorithm>
 #include <boost/serialization/array.hpp>
 #include <boost/serialization/vector.hpp>
-#include <cstddef>
-#include <functional>
-#include <iostream>
-#include <limits>
-#include <numeric>
-#include <vector>
 
 bool polikanov_v_gauss_band_columns_mpi::GaussBandColumnsParallelMPI::validation() {
   internal_order_test();
@@ -161,8 +154,6 @@ bool polikanov_v_gauss_band_columns_mpi::GaussBandColumnsSequentialMPI::pre_proc
 
 bool polikanov_v_gauss_band_columns_mpi::GaussBandColumnsSequentialMPI::run() {
   internal_order_test();
-
-  size_t n = mat.get_rows();
 
   for (size_t k = 0; k < n - 1; ++k) {
     Matrix iter_mat = mat.submatrix(k, k);

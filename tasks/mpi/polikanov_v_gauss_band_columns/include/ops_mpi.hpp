@@ -8,8 +8,6 @@
 #include <boost/serialization/shared_ptr.hpp>
 #include <boost/serialization/vector.hpp>
 #include <memory>
-#include <string>
-#include <utility>
 #include <vector>
 
 #include "core/task/include/task.hpp"
@@ -360,7 +358,6 @@ class GaussBandColumnsSequentialMPI : public ppc::core::Task {
  private:
   Matrix mat;
   size_t n;
-  Matrix iter_mat;
   std::vector<double> answers;
 };
 

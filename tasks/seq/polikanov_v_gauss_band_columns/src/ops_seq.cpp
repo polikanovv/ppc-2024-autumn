@@ -1,12 +1,5 @@
 #include "seq/polikanov_v_gauss_band_columns/include/ops_seq.hpp"
 
-#include <algorithm>
-#include <cstddef>
-#include <cstring>
-#include <iostream>
-#include <stdexcept>
-#include <vector>
-
 bool polikanov_v_gauss_band_columns_seq::GaussBandColumnsSequential::validation() {
   internal_order_test();
 
@@ -34,8 +27,6 @@ bool polikanov_v_gauss_band_columns_seq::GaussBandColumnsSequential::pre_process
 
 bool polikanov_v_gauss_band_columns_seq::GaussBandColumnsSequential::run() {
   internal_order_test();
-
-  size_t n = mat.get_rows();
 
   for (size_t k = 0; k < n - 1; ++k) {
     Matrix iter_mat = mat.submatrix(k, k);
