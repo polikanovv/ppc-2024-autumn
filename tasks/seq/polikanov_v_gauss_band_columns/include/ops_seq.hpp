@@ -2,11 +2,6 @@
 
 #include <gtest/gtest.h>
 
-#include <boost/mpi/collectives.hpp>
-#include <boost/mpi/communicator.hpp>
-#include <boost/serialization/access.hpp>
-#include <boost/serialization/shared_ptr.hpp>
-#include <boost/serialization/vector.hpp>
 #include <memory>
 #include <vector>
 
@@ -20,21 +15,6 @@ class Matrix {
   size_t row_offset, col_offset;    // Смещения по строкам и столбцам
   size_t parent_rows, parent_cols;  // Размеры исходной матрицы
   std::shared_ptr<std::vector<double>> data;  // Совместно используемые данные в столбцовом порядке
-
-  // Дружественный класс для доступа к приватным членам при сериализации
-  friend class boost::serialization::access;
-
-  // Метод сериализации
-  template <class Archive>
-  void serialize(Archive& ar, const unsigned int version) {
-    ar & rows;
-    ar & cols;
-    ar & row_offset;
-    ar & col_offset;
-    ar & parent_rows;
-    ar & parent_cols;
-    ar & data;
-  }
 
  public:
   void swap_rows(size_t i1, size_t i2) {
