@@ -16,15 +16,13 @@ namespace polikanov_v_gauss_band_columns_mpi {
 
 class Matrix {
  private:
-  size_t rows, cols;                // Размеры текущей матрицы
-  size_t row_offset, col_offset;    // Смещения по строкам и столбцам
-  size_t parent_rows, parent_cols;  // Размеры исходной матрицы
-  std::shared_ptr<std::vector<double>> data;  // Совместно используемые данные в столбцовом порядке
+  size_t rows, cols;
+  size_t row_offset, col_offset;
+  size_t parent_rows, parent_cols;
+  std::shared_ptr<std::vector<double>> data;
 
-  // Дружественный класс для доступа к приватным членам при сериализации
   friend class boost::serialization::access;
 
-  // Метод сериализации
   template <class Archive>
   void serialize(Archive& ar, const unsigned int version) {
     ar & rows;
@@ -45,7 +43,6 @@ class Matrix {
     size_t global_i1 = row_offset + i1;
     size_t global_i2 = row_offset + i2;
 
-    // Проходим по всем столбцам исходной матрицы
     for (size_t j = 0; j < parent_cols; ++j) {
       size_t index1 = j * parent_rows + global_i1;
       size_t index2 = j * parent_rows + global_i2;
@@ -62,7 +59,6 @@ class Matrix {
         parent_cols(0),
         data(std::make_shared<std::vector<double>>()) {}
 
-  // Конструктор из двумерного вектора (заполнение данными)
   Matrix(const std::vector<double>& input_matrix, size_t n)
       : rows(n),
         cols(n + 1),
@@ -71,7 +67,6 @@ class Matrix {
         parent_rows(rows),
         parent_cols(cols),
         data(std::make_shared<std::vector<double>>(rows * cols)) {
-    // Заполняем данные в столбцовом порядке
     for (size_t j = 0; j < cols; ++j) {
       for (size_t i = 0; i < rows; ++i) {
         size_t index = j * parent_rows + i;
@@ -96,12 +91,10 @@ class Matrix {
     other.parent_cols = 0;
   }
 
-  // Конструктор копирования
   Matrix(const Matrix& other) = default;
 
-  // Оператор копирования
   Matrix& operator=(const Matrix& other) {
-    if (this != &other) {  // Проверка на самоприсваивание
+    if (this != &other) {
       rows = other.rows;
       cols = other.cols;
       row_offset = other.row_offset;
@@ -133,7 +126,6 @@ class Matrix {
     return *this;
   }
 
-  // Конструктор основной матрицы
   Matrix(size_t rows, size_t cols)
       : rows(rows),
         cols(cols),
@@ -143,7 +135,6 @@ class Matrix {
         parent_cols(cols),
         data(std::make_shared<std::vector<double>>(rows * cols)) {}
 
-  // Метод доступа к элементу с проверкой границ
   double& at(size_t i, size_t j) {
     if (i >= rows || j >= cols) {
       throw std::out_of_range("Index out of bounds");
@@ -164,7 +155,6 @@ class Matrix {
     return (*data)[index];
   }
 
-  // Метод для заполнения матрицы
   void fill(const std::function<double(size_t, size_t)>& func) {
     for (size_t i = 0; i < rows; ++i) {
       for (size_t j = 0; j < cols; ++j) {
@@ -173,12 +163,11 @@ class Matrix {
     }
   }
 
-  // Метод для создания подматрицы
   Matrix submatrix(size_t start_row, size_t start_col) {
     if (start_row >= rows || start_col >= cols) {
       throw std::out_of_range("Submatrix starting indices out of bounds");
     }
-    auto m = *this;  // Копируем текущий объект
+    auto m = *this;
     m.rows -= start_row;
     m.cols -= start_col;
     m.row_offset += start_row;
@@ -190,9 +179,8 @@ class Matrix {
     std::vector<double> result(rows * cols);
     size_t idx = 0;
 
-    // Итерируем по строкам и столбцам подматрицы
-    for (size_t j = 0; j < cols; ++j) {    // Столбцы
-      for (size_t i = 0; i < rows; ++i) {  // Строки
+    for (size_t j = 0; j < cols; ++j) {
+      for (size_t i = 0; i < rows; ++i) {
         result[idx++] = at(i, j);
       }
     }
@@ -206,9 +194,8 @@ class Matrix {
     }
     size_t idx = 0;
 
-    // Итерируем по столбцам и строкам подматрицы
-    for (size_t j = 0; j < cols; ++j) {    // Столбцы
-      for (size_t i = 0; i < rows; ++i) {  // Строки
+    for (size_t j = 0; j < cols; ++j) {
+      for (size_t i = 0; i < rows; ++i) {
         at(i, j) = vec[idx++];
       }
     }
@@ -228,9 +215,8 @@ class Matrix {
       size_t cols_for_proc = cols_per_proc + (proc < remaining_cols ? 1 : 0);
       counts[proc] = static_cast<int>(cols_for_proc * total_rows);
 
-      // Смещение относительно подматрицы
       size_t col_start = proc * cols_per_proc + std::min(proc, remaining_cols);
-      size_t disp = col_start * total_rows;  // Столбцовый порядок в подматрице
+      size_t disp = col_start * total_rows;
 
       displs[proc] = static_cast<int>(disp);
     }
@@ -241,12 +227,10 @@ class Matrix {
       throw std::logic_error("Matrix must have at least two rows to perform elimination.");
     }
 
-    // Проверяем опорный элемент
     double pivot = at(0, 0);
 
     if (pivot == 0) {
-      // Ищем ненулевой элемент ниже по столбцу
-      size_t non_zero_row = rows;  // Используем rows как недопустимое значение
+      size_t non_zero_row = rows;
       for (size_t i = 1; i < rows; ++i) {
         if (at(i, 0) != 0) {
           non_zero_row = i;
@@ -255,13 +239,10 @@ class Matrix {
       }
 
       if (non_zero_row == rows) {
-        // Все элементы в столбце равны нулю
         throw std::logic_error("All elements in the pivot column are zero. Cannot perform elimination.");
       }
 
-      // Меняем местами строки
       swap_rows(0, non_zero_row);
-      // Обновляем опорный элемент
       pivot = at(0, 0);
     }
 
@@ -278,10 +259,9 @@ class Matrix {
     return factors;
   }
 
-  // Метод для выполнения обратного хода на верхнетреугольной расширенной матрице
   std::vector<double> backward_substitution() const {
     size_t n = get_rows();
-    size_t m = get_cols();  // Должно быть n + 1 для расширенной матрицы
+    size_t m = get_cols();
 
     if (m != n + 1) {
       throw std::invalid_argument("Матрица должна быть расширенной с n+1 столбцами.");
@@ -289,11 +269,9 @@ class Matrix {
 
     std::vector<double> x(n);
 
-    // Обратный ход: начинаем с последней строки и идем вверх
     for (size_t i = n; i-- > 0;) {
       double sum = 0.0;
 
-      // Суммируем известные значения x[j]
       for (size_t j = i + 1; j < n; ++j) {
         sum += at(i, j) * x[j];
       }
@@ -303,7 +281,6 @@ class Matrix {
         throw std::runtime_error("Обнаружен нулевой диагональный элемент во время обратного хода.");
       }
 
-      // Вектор правой части находится в последнем столбце
       double bi = at(i, n);
 
       x[i] = (bi - sum) / diag;
@@ -312,7 +289,6 @@ class Matrix {
     return x;
   }
 
-  // Получение указателя на данные в столбцовом порядке
   double* col_data() { return data->data(); }
 
   const double* col_data() const { return data->data(); }
