@@ -211,8 +211,17 @@ bool polikanov_v_gauss_band_columns_mpi::GaussBandColumnsSequentialMPI::validati
 
   size_t val_n = *reinterpret_cast<size_t*>(taskData->inputs[1]);
   size_t val_mat_size = taskData->inputs_count[0];
+  auto* val_matrix_data = reinterpret_cast<double*>(taskData->inputs[0]);
 
-  return val_n >= 2 && val_mat_size == (val_n * (val_n + 1));
+  std::vector<double> val_matrix(val_n * (val_n + 1));
+  val_matrix.assign(val_matrix_data, val_matrix_data + val_mat_size);
+
+  bool has_unique_solution = false;
+  if (val_n >= 2 && val_mat_size == (val_n * (val_n + 1))) {
+    has_unique_solution = hasUniqueSolution(val_matrix, val_n);
+  }
+
+  return has_unique_solution;
 }
 
 bool polikanov_v_gauss_band_columns_mpi::GaussBandColumnsSequentialMPI::pre_processing() {
